@@ -37,7 +37,7 @@ case $key in
     ;;
     -w|--workers)
     N_WORK="$2"
-    test "$N_MAST" -gt "0" &> /dev/null || err "Invalid workers: $N_MAST"
+    test "$N_WORK" -gt "0" &> /dev/null || err "Invalid workers: $N_WORK"
     shift
     shift
     ;;
@@ -220,7 +220,7 @@ echo "# Deploy OpenShift 4.2.stable on new libvirt network (192.168.155.0/24)"
 echo "${0} --ocp-version 4.2.stable --libvirt-oct 155"
 echo "${0} -O 4.2.stable -N 155"
 echo 
-echo "# Destory the already installed cluster"
+echo "# Destroy the already installed cluster"
 echo "${0} --cluster-name ocp43 --cluster-domain lab.test.com --destroy-installation"
 echo "${0} -c ocp43 -d lab.test.com --destroy-installation"
 echo
@@ -263,8 +263,15 @@ if [ "$CLEANUP" == "yes" ]; then
     echo 
 
     for vm in $(virsh list --all --name | grep "${CLUSTER_NAME}-lb\|${CLUSTER_NAME}-master-\|${CLUSTER_NAME}-worker-\|${CLUSTER_NAME}-bootstrap"); do
-        check_if_we_can_continue "Deleting VM $vm"
+        check_if_we_can_continue "Deleting VM $vm"    
+        IP=$(virsh domifaddr "$vm" | grep ipv4 | head -n1 | awk '{print $4}' | cut -d'/' -f1 2> /dev/null)
+        MAC=$(virsh domifaddr "$vm" | grep ipv4 | head -n1 | awk '{print $2}')
+        echo -n "XXXX> Deleting DHCP reservation for VM $vm: "
+        virsh net-update ${VIR_NET} delete ip-dhcp-host --xml "<host mac='$MAC' ip='$IP'/>" --live --config > /dev/null || \
+        err "Adding DHCP reservation failed"; ok
+
         echo -n "XXXX> Deleting VM $vm: "
+
         virsh destroy "$vm" > /dev/null || err "virsh destroy $vm failed";
         virsh undefine "$vm" --remove-all-storage > /dev/null || err "virsh destroy $vm --remove-all-storage failed";
         ok
