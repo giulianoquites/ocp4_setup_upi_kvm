@@ -269,9 +269,7 @@ if [ "$CLEANUP" == "yes" ]; then
         echo -n "XXXX> Deleting DHCP reservation for VM $vm: "
         virsh net-update ${VIR_NET} delete ip-dhcp-host --xml "<host mac='$MAC' ip='$IP'/>" --live --config > /dev/null || \
         err "Adding DHCP reservation failed"; ok
-
         echo -n "XXXX> Deleting VM $vm: "
-
         virsh destroy "$vm" > /dev/null || err "virsh destroy $vm failed";
         virsh undefine "$vm" --remove-all-storage > /dev/null || err "virsh destroy $vm --remove-all-storage failed";
         ok
